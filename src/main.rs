@@ -1,10 +1,14 @@
 #![feature(let_else)]
+#![feature(is_some_and)]
 extern crate core;
 
-use crate::lexer::{execute, parse, Lexer};
-
+use crate::lexer::Lexer;
 mod lexer;
+mod token;
 
 fn main() {
-    println!("{:?}", Lexer::new().tokenize("2+1+15 + 1 + 'hello';"));
+    let lexer = Lexer::new("hello_world");
+    for token in lexer {
+        println!("{token:?}")
+    }
 }
