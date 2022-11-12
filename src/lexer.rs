@@ -15,60 +15,14 @@ impl Iterator for Lexer {
         let mut buffer = String::new();
         let next_input = self.input.as_bytes()[self.start] as char;
         if next_input.is_numeric() {
-            let mut is_floating = false;
-            loop {
-                if self.start == self.end {
-                    break;
-                };
-                let maybe_next_input = self.input.chars().nth(self.start);
-                if let Some(next_char) = maybe_next_input {
-                    if next_char.is_numeric() {
-                        buffer.push(next_char);
-                        self.inc();
-                    } else if next_char == '.' || next_char == ',' {
-                        if is_floating {
-                            panic!("cant have more than one decimal");
-                        }
-                        is_floating = true;
-                        buffer.push(next_char);
-                        self.inc();
-                    } else {
-                        break;
-                    }
-                }
-            }
-            if is_floating {
-                return Some(Token::Literal(LiteralToken::Number(NumberToken::Float(
-                    buffer.parse::<f64>().unwrap(),
-                ))));
-            } else {
-                return Some(Token::Literal(LiteralToken::Number(NumberToken::Integer(
-                    buffer.parse::<i64>().unwrap(),
-                ))));
-            }
+            return Some(self.next_number(&mut buffer));
         }
         if next_input.is_whitespace() {
             self.inc();
             return Some(Token::Delimiter(DelimiterToken::Space));
         }
         if next_input == '"' || next_input == '\'' || next_input == '`' {
-            self.inc();
-            loop {
-                if self.start == self.end {
-                    break;
-                };
-                let maybe_next_input = self.input.chars().nth(self.start);
-                if let Some(next_char) = maybe_next_input {
-                    if next_char != next_input {
-                        buffer.push(next_char);
-                        self.inc();
-                    } else {
-                        self.inc();
-                        break;
-                    }
-                }
-            }
-            return Some(Token::Literal(LiteralToken::String(buffer)));
+            return Some(self.next_string(&mut buffer, next_input));
         }
         if next_input.is_alphabetic() {
             return Some(self.next_identifier(&mut buffer));
@@ -101,6 +55,58 @@ impl Lexer {
     }
     fn inc(&mut self) {
         self.start = self.start + 1;
+    }
+    fn next_number(&mut self, buffer: &mut String) -> Token {
+        let mut is_floating = false;
+        loop {
+            if self.start == self.end {
+                break;
+            };
+            let maybe_next_input = self.input.chars().nth(self.start);
+            if let Some(next_char) = maybe_next_input {
+                if next_char.is_numeric() {
+                    buffer.push(next_char);
+                    self.inc();
+                } else if next_char == '.' || next_char == ',' {
+                    if is_floating {
+                        panic!("cant have more than one decimal");
+                    }
+                    is_floating = true;
+                    buffer.push(next_char);
+                    self.inc();
+                } else {
+                    break;
+                }
+            }
+        }
+        if is_floating {
+            return Token::Literal(LiteralToken::Number(NumberToken::Float(
+                buffer.parse::<f64>().unwrap(),
+            )));
+        } else {
+            return Token::Literal(LiteralToken::Number(NumberToken::Integer(
+                buffer.parse::<i64>().unwrap(),
+            )));
+        }
+    }
+    fn next_string(&mut self, buffer: &mut String, quote_type: char) -> Token {
+        self.inc();
+        loop {
+            if self.start == self.end {
+                break;
+            };
+            let maybe_next_input = self.input.chars().nth(self.start);
+            if let Some(next_char) = maybe_next_input {
+                if next_char != quote_type {
+                    buffer.push(next_char);
+                    self.inc();
+                } else {
+                    self.inc();
+                    break;
+                }
+            }
+        }
+        return Token::Literal(LiteralToken::String(buffer.to_string()));
     }
     fn next_identifier(&mut self, buffer: &mut String) -> Token {
         loop {
