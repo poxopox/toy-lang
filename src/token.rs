@@ -1,11 +1,12 @@
-use std::ops::Add;
 use phf::phf_map;
+use std::ops::Add;
 
 #[derive(Debug)]
 pub enum NumberToken {
     SignedInteger(i64),
     UnsignedInteger(u64),
-    Float(f64),}
+    Float(f64),
+}
 
 impl<'a> From<&'a str> for NumberToken {
     fn from(value: &'a str) -> Self {
@@ -27,7 +28,7 @@ impl Add for NumberToken {
                     Some(result) => Self::SignedInteger(result),
                     None => Self::Float(left as f64 + right as f64),
                 }
-            },
+            }
             // If both are unsigned integers, keep as unsigned integer if possible
             (Self::UnsignedInteger(left), Self::UnsignedInteger(right)) => {
                 // Check for overflow
@@ -35,7 +36,7 @@ impl Add for NumberToken {
                     Some(result) => Self::UnsignedInteger(result),
                     None => Self::Float(left as f64 + right as f64),
                 }
-            },
+            }
             // If one is float, result is float
             (Self::Float(left), Self::Float(right)) => Self::Float(left + right),
             (Self::Float(left), Self::SignedInteger(right)) => Self::Float(left + right as f64),
@@ -52,7 +53,7 @@ impl Add for NumberToken {
                 } else {
                     Self::Float(left as f64 + right as f64)
                 }
-            },
+            }
             (Self::UnsignedInteger(left), Self::SignedInteger(right)) => {
                 if left <= i64::MAX as u64 {
                     match (left as i64).checked_add(right) {
@@ -62,7 +63,7 @@ impl Add for NumberToken {
                 } else {
                     Self::Float(left as f64 + right as f64)
                 }
-            },
+            }
         }
     }
 }
@@ -75,10 +76,10 @@ pub enum WhiteSpaceToken {
 
 #[derive(Debug)]
 pub enum PunctuatorToken {
-    Semicolon,    // ;
-    Comma,        // ,
-    Dot,          // .
-    Colon,        // :
+    Semicolon, // ;
+    Comma,     // ,
+    Dot,       // .
+    Colon,     // :
 }
 
 #[derive(Debug)]
@@ -179,7 +180,7 @@ pub enum Token {
     Unknown(char),
 }
 
-pub const KEYWORDS: [&str; 5] = [ "if", "let", "for", "in", "has"];
+pub const KEYWORDS: [&str; 5] = ["if", "let", "for", "in", "has"];
 pub const KEYWORD_STRING_TO_TOKEN: phf::Map<&'static str, Token> = phf_map! {
     "if" => Token::ControlFlow(ControlFlowToken::If),
     "let" => Token::ControlFlow(ControlFlowToken::Let),

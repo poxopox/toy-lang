@@ -1,15 +1,6 @@
 use crate::token::{
-    DelimiterToken,
-    IdentifierToken,
-    LiteralToken,
-    NumberToken,
-    Token,
-    ArithmeticToken,
-    ComparisonToken,
-    LogicalToken,
-    AssignmentToken,
-    WhiteSpaceToken,
-    KEYWORDS,
+    ArithmeticToken, AssignmentToken, ComparisonToken, DelimiterToken, IdentifierToken,
+    LiteralToken, LogicalToken, NumberToken, Token, WhiteSpaceToken, KEYWORDS,
 };
 use std::borrow::Borrow;
 use std::convert::TryFrom;
@@ -165,6 +156,8 @@ impl Lexer {
                 }
             }
         }
-        return Token::Identifier(IdentifierToken { name: buffer.to_string() });
+        return Token::Identifier(IdentifierToken {
+            name: buffer.to_string(),
+        });
     }
 }
