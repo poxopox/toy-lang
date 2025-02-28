@@ -1,4 +1,3 @@
-#![feature(let_else)]
 #![feature(is_some_and)]
 extern crate core;
 
@@ -7,7 +6,7 @@ mod lexer;
 mod token;
 
 fn main() {
-    let lexer = Lexer::new("10+10.5");
+    let lexer = Lexer::new("let x = (10 + 10.5 === 20.5)");
     for token in lexer {
         println!("{token:?}")
     }

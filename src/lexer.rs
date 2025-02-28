@@ -1,5 +1,15 @@
 use crate::token::{
-    DelimiterToken, IdentifierToken, LiteralToken, NumberToken, OperatorToken, Token,
+    DelimiterToken,
+    IdentifierToken,
+    LiteralToken,
+    NumberToken,
+    Token,
+    ArithmeticToken,
+    ComparisonToken,
+    LogicalToken,
+    AssignmentToken,
+    WhiteSpaceToken,
+    KEYWORDS,
 };
 use std::borrow::Borrow;
 use std::convert::TryFrom;
@@ -9,29 +19,58 @@ use std::str::Chars;
 impl Iterator for Lexer {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
+        // If we've reached the end of input, return None to signal end of iteration
         if self.start == self.end {
             return None;
         }
+
+        // Buffer to accumulate characters for multi-character tokens
         let mut buffer = String::new();
+
+        // Get the next character from input
         let next_input = self.input.as_bytes()[self.start] as char;
+
+        // If the next character is a number, process a numeric token
         if next_input.is_numeric() {
             return Some(self.next_number(&mut buffer));
         }
+
+        // If the next character is whitespace, consume it and return a Space token
         if next_input.is_whitespace() {
             self.inc();
-            return Some(Token::Delimiter(DelimiterToken::Space));
+            return Some(Token::WhiteSpace(WhiteSpaceToken::Space));
         }
+
+        // If the next character is a quotation mark, process a string token
         if next_input == '"' || next_input == '\'' || next_input == '`' {
             return Some(self.next_string(&mut buffer, next_input));
         }
+
+        // If the next character is alphabetic, process an identifier token
         if next_input.is_alphabetic() {
             return Some(self.next_identifier(&mut buffer));
         }
+
+        // Process single-character operators or return unknown token
         let token = match next_input {
-            '+' => Some(Token::Operator(OperatorToken::Plus)),
-            '-' => Some(Token::Operator(OperatorToken::Minus)),
+            '+' => Some(Token::Arithmetic(ArithmeticToken::Plus)),
+            '-' => Some(Token::Arithmetic(ArithmeticToken::Minus)),
+            '=' => Some(Token::Assignment(AssignmentToken::Assign)),
+            '>' => Some(Token::Comparison(ComparisonToken::GreaterThan)),
+            '<' => Some(Token::Comparison(ComparisonToken::LessThan)),
+            '!' => Some(Token::Logical(LogicalToken::Not)),
+            '&' => Some(Token::Logical(LogicalToken::BitwiseAnd)),
+            '|' => Some(Token::Logical(LogicalToken::BitwiseOr)),
+            '(' => Some(Token::Delimiter(DelimiterToken::OpenParenthesis)),
+            ')' => Some(Token::Delimiter(DelimiterToken::CloseParenthesis)),
+            '[' => Some(Token::Delimiter(DelimiterToken::OpenBracket)),
+            ']' => Some(Token::Delimiter(DelimiterToken::CloseBracket)),
+            '{' => Some(Token::Delimiter(DelimiterToken::OpenBrace)),
+            '}' => Some(Token::Delimiter(DelimiterToken::CloseBrace)),
             _ => Some(Token::Unknown(next_input)),
         };
+
+        // Consume the character and return the token
         self.inc();
         return token;
     }
@@ -84,7 +123,7 @@ impl Lexer {
                 buffer.parse::<f64>().unwrap(),
             )));
         } else {
-            return Token::Literal(LiteralToken::Number(NumberToken::Integer(
+            return Token::Literal(LiteralToken::Number(NumberToken::SignedInteger(
                 buffer.parse::<i64>().unwrap(),
             )));
         }
@@ -117,6 +156,9 @@ impl Lexer {
             if let Some(next_char) = maybe_next_input {
                 if matches!(next_char, 'a'..='z' | '0'..='9' | '_' | '-') {
                     buffer.push(next_char);
+                    if KEYWORDS.contains(&buffer.as_str()) {
+                        // return Token::Keyword(KeywordToken::from(buffer.as_str()));
+                    }
                     self.inc();
                 } else {
                     break;
