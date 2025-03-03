@@ -1,17 +1,15 @@
-use crate::token::{
-    ArithmeticToken, AssignmentToken, ComparisonToken, DelimiterToken, IdentifierToken,
-    LiteralToken, LogicalToken, NumberToken, Token, WhiteSpaceToken, KEYWORDS,
-};
+use crate::token::*;
 use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::ops::{Add, Deref};
 use std::str::Chars;
 
-impl Iterator for Lexer {
-    type Item = Token;
+impl Iterator for Scanner {
+    type Item = TokenType;
+
     fn next(&mut self) -> Option<Self::Item> {
         // If we've reached the end of input, return None to signal end of iteration
-        if self.start == self.end {
+        if self.start_idx == self.current_idx {
             return None;
         }
 
@@ -19,145 +17,90 @@ impl Iterator for Lexer {
         let mut buffer = String::new();
 
         // Get the next character from input
-        let next_input = self.input.as_bytes()[self.start] as char;
-
-        // If the next character is a number, process a numeric token
-        if next_input.is_numeric() {
-            return Some(self.next_number(&mut buffer));
-        }
-
-        // If the next character is whitespace, consume it and return a Space token
-        if next_input.is_whitespace() {
-            self.inc();
-            return Some(Token::WhiteSpace(WhiteSpaceToken::Space));
-        }
-
-        // If the next character is a quotation mark, process a string token
-        if next_input == '"' || next_input == '\'' || next_input == '`' {
-            return Some(self.next_string(&mut buffer, next_input));
-        }
-
-        // If the next character is alphabetic, process an identifier token
-        if next_input.is_alphabetic() {
-            return Some(self.next_identifier(&mut buffer));
-        }
-
-        // Process single-character operators or return unknown token
-        let token = match next_input {
-            '+' => Some(Token::Arithmetic(ArithmeticToken::Plus)),
-            '-' => Some(Token::Arithmetic(ArithmeticToken::Minus)),
-            '=' => Some(Token::Assignment(AssignmentToken::Assign)),
-            '>' => Some(Token::Comparison(ComparisonToken::GreaterThan)),
-            '<' => Some(Token::Comparison(ComparisonToken::LessThan)),
-            '!' => Some(Token::Logical(LogicalToken::Not)),
-            '&' => Some(Token::Logical(LogicalToken::BitwiseAnd)),
-            '|' => Some(Token::Logical(LogicalToken::BitwiseOr)),
-            '(' => Some(Token::Delimiter(DelimiterToken::OpenParenthesis)),
-            ')' => Some(Token::Delimiter(DelimiterToken::CloseParenthesis)),
-            '[' => Some(Token::Delimiter(DelimiterToken::OpenBracket)),
-            ']' => Some(Token::Delimiter(DelimiterToken::CloseBracket)),
-            '{' => Some(Token::Delimiter(DelimiterToken::OpenBrace)),
-            '}' => Some(Token::Delimiter(DelimiterToken::CloseBrace)),
-            _ => Some(Token::Unknown(next_input)),
-        };
-
-        // Consume the character and return the token
-        self.inc();
-        return token;
+        let next_input = self.input.as_bytes()[self.start_idx] as char;
+        return Some(TokenType::Unknown(' '));
     }
 }
 
 #[derive(Debug, Default)]
-pub struct Lexer {
+pub struct Scanner {
     input: String,
-    start: usize,
-    end: usize,
+    start_idx: usize,
+    current_idx: usize,
 }
 
-impl Lexer {
+impl Scanner {
     pub fn new(input: &str) -> Self {
-        let end = input.len();
         Self {
             input: input.to_string(),
-            start: 0,
-            end,
+            start_idx: 0,
+            current_idx: 0,
         }
     }
     fn inc(&mut self) {
-        self.start = self.start + 1;
+        self.current_idx = self.current_idx + 1;
     }
-    fn next_number(&mut self, buffer: &mut String) -> Token {
-        let mut is_floating = false;
-        loop {
-            if self.start == self.end {
+
+    fn eof_token(&mut self) -> Token {
+        self.token_at_current_position(TokenType::Delimiter(DelimiterToken::EOF))
+    }
+
+    fn unknown_token(&mut self) -> Token {
+        self.token_at_current_position(TokenType::Unknown(self.input.chars().nth(0).unwrap()))
+    }
+
+    fn token_at_current_position(&mut self, token_type: TokenType) -> Token {
+        Token::new(
+            token_type,
+            TokenSpan {
+                start: self.start_idx,
+                end: self.current_idx,
+                line: 0,
+                column: 0,
+            },
+        )
+    }
+
+    fn word_token(&mut self) -> Token {
+        let mut word = String::new();
+        while self.current_idx < self.input.len() {
+            let next_char = self.input.chars().nth(self.current_idx).unwrap();
+            if next_char.is_alphanumeric() {
+                word.push(next_char);
+                self.inc();
+            } else {
                 break;
-            };
-            let maybe_next_input = self.input.chars().nth(self.start);
-            if let Some(next_char) = maybe_next_input {
-                if next_char.is_numeric() {
-                    buffer.push(next_char);
-                    self.inc();
-                } else if next_char == '.' || next_char == ',' {
-                    if is_floating {
-                        panic!("cant have more than one decimal");
-                    }
-                    is_floating = true;
-                    buffer.push(next_char);
-                    self.inc();
-                } else {
-                    break;
-                }
             }
         }
-        if is_floating {
-            return Token::Literal(LiteralToken::Number(NumberToken::Float(
-                buffer.parse::<f64>().unwrap(),
-            )));
+        self.token_at_current_position(TokenType::Identifier(IdentifierToken { value: word }))
+    }
+
+    pub fn next_token(&mut self) -> Token {
+        //First, make sure it's not the end of input
+        let token = if self.current_idx >= self.input.len() {
+            self.eof_token()
         } else {
-            return Token::Literal(LiteralToken::Number(NumberToken::SignedInteger(
-                buffer.parse::<i64>().unwrap(),
-            )));
-        }
-    }
-    fn next_string(&mut self, buffer: &mut String, quote_type: char) -> Token {
+            let next_char = self.input.chars().nth(self.current_idx).unwrap();
+            if next_char.is_alphanumeric() {
+                // If the next character is alphanumeric, it's a word token
+                self.word_token()
+            } else if next_char.is_whitespace() {
+                // If the next character is whitespace, capture as whitespace token
+                // first, get the whitespace type
+                let token_type = match next_char {
+                    ' ' => TokenType::WhiteSpace(WhiteSpaceToken::Space),
+                    '\t' => TokenType::WhiteSpace(WhiteSpaceToken::Tab),
+                    '\n' => TokenType::WhiteSpace(WhiteSpaceToken::NewLine),
+                    _ => TokenType::Unknown(next_char),
+                };
+                self.token_at_current_position(token_type)
+            } else {
+                // If no other cases match, return an unknown token
+                self.unknown_token()
+            }
+        };
+        self.start_idx = self.current_idx;
         self.inc();
-        loop {
-            if self.start == self.end {
-                break;
-            };
-            let maybe_next_input = self.input.chars().nth(self.start);
-            if let Some(next_char) = maybe_next_input {
-                if next_char != quote_type {
-                    buffer.push(next_char);
-                    self.inc();
-                } else {
-                    self.inc();
-                    break;
-                }
-            }
-        }
-        return Token::Literal(LiteralToken::String(buffer.to_string()));
-    }
-    fn next_identifier(&mut self, buffer: &mut String) -> Token {
-        loop {
-            if self.start == self.end {
-                break;
-            };
-            let maybe_next_input = self.input.chars().nth(self.start);
-            if let Some(next_char) = maybe_next_input {
-                if matches!(next_char, 'a'..='z' | '0'..='9' | '_' | '-') {
-                    buffer.push(next_char);
-                    if KEYWORDS.contains(&buffer.as_str()) {
-                        // return Token::Keyword(KeywordToken::from(buffer.as_str()));
-                    }
-                    self.inc();
-                } else {
-                    break;
-                }
-            }
-        }
-        return Token::Identifier(IdentifierToken {
-            name: buffer.to_string(),
-        });
+        token
     }
 }

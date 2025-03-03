@@ -1,7 +1,16 @@
-use phf::phf_map;
+use std::cmp::PartialEq;
 use std::ops::Add;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
+pub struct TokenSpan {
+    pub start: usize,
+    pub end: usize,
+    // Not used yet
+    pub line: usize,
+    pub column: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum NumberToken {
     SignedInteger(i64),
     UnsignedInteger(u64),
@@ -67,22 +76,22 @@ impl Add for NumberToken {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WhiteSpaceToken {
     Space,
     Tab,
     NewLine,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PunctuatorToken {
-    Semicolon, // ;
-    Comma,     // ,
-    Dot,       // .
-    Colon,     // :
+    Semicolon,
+    Comma,
+    Dot,
+    Colon,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum DelimiterToken {
     SingleQuote,
     DoubleQuote,
@@ -96,13 +105,13 @@ pub enum DelimiterToken {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralToken {
     Number(NumberToken),
     String(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ArithmeticToken {
     Plus,
     Minus,
@@ -116,7 +125,7 @@ pub enum ArithmeticToken {
     Modulo,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ComparisonToken {
     Equal,
     NotEqual,
@@ -126,7 +135,7 @@ pub enum ComparisonToken {
     LessThanOrEqual,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LogicalToken {
     And,
     Or,
@@ -137,12 +146,7 @@ pub enum LogicalToken {
     XAnd,
 }
 
-#[derive(Debug)]
-pub struct IdentifierToken {
-    pub(crate) name: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ControlFlowToken {
     If,
     Else,
@@ -152,7 +156,7 @@ pub enum ControlFlowToken {
     Has,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AssignmentToken {
     Assign,
     PlusAssign,
@@ -165,8 +169,19 @@ pub enum AssignmentToken {
     AndAssign,
 }
 
-#[derive(Debug)]
-pub enum Token {
+#[derive(Debug, PartialEq)]
+pub struct IdentifierToken {
+    pub value: String,
+}
+
+impl IdentifierToken {
+    pub fn new(value: String) -> Self {
+        IdentifierToken { value }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum TokenType {
     Assignment(AssignmentToken),
     Arithmetic(ArithmeticToken),
     Punctuation(PunctuatorToken),
@@ -181,10 +196,18 @@ pub enum Token {
 }
 
 pub const KEYWORDS: [&str; 5] = ["if", "let", "for", "in", "has"];
-pub const KEYWORD_STRING_TO_TOKEN: phf::Map<&'static str, Token> = phf_map! {
-    "if" => Token::ControlFlow(ControlFlowToken::If),
-    "let" => Token::ControlFlow(ControlFlowToken::Let),
-    "for" => Token::ControlFlow(ControlFlowToken::For),
-    "in" => Token::ControlFlow(ControlFlowToken::In),
-    "has" => Token::ControlFlow(ControlFlowToken::Has),
-};
+
+#[derive(Debug, PartialEq)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub token_span: TokenSpan,
+}
+
+impl Token {
+    pub fn new(token_type: TokenType, token_span: TokenSpan) -> Self {
+        Token {
+            token_type,
+            token_span,
+        }
+    }
+}
