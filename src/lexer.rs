@@ -1,24 +1,14 @@
 use crate::token::*;
-use std::borrow::Borrow;
-use std::convert::TryFrom;
-use std::ops::{Add, Deref};
-use std::str::Chars;
 
 impl Iterator for Scanner {
-    type Item = TokenType;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // If we've reached the end of input, return None to signal end of iteration
-        if self.start_idx == self.current_idx {
-            return None;
+        if self.end_of_input() {
+            None
+        } else {
+            Some(self.next_token())
         }
-
-        // Buffer to accumulate characters for multi-character tokens
-        let mut buffer = String::new();
-
-        // Get the next character from input
-        let next_input = self.input.as_bytes()[self.start_idx] as char;
-        return Some(TokenType::Unknown(' '));
     }
 }
 
@@ -46,9 +36,10 @@ impl Scanner {
     }
 
     fn unknown_token(&mut self) -> Token {
-        self.token_at_current_position(TokenType::Unknown(self.input.chars().nth(0).unwrap()))
+        self.token_at_current_position(TokenType::Unknown(
+            self.input.chars().nth(self.current_idx).unwrap(),
+        ))
     }
-
     fn token_at_current_position(&mut self, token_type: TokenType) -> Token {
         Token::new(
             token_type,
@@ -60,10 +51,12 @@ impl Scanner {
             },
         )
     }
-
+    pub fn end_of_input(&self) -> bool {
+        self.current_idx >= self.input.len()
+    }
     fn word_token(&mut self) -> Token {
         let mut word = String::new();
-        while self.current_idx < self.input.len() {
+        while !self.end_of_input() {
             let next_char = self.input.chars().nth(self.current_idx).unwrap();
             if next_char.is_alphanumeric() {
                 word.push(next_char);
@@ -72,6 +65,45 @@ impl Scanner {
                 break;
             }
         }
+        if word.eq("let") {
+            return self.token_at_current_position(TokenType::Declaration(DeclarationToken::Let));
+        } else if word.eq("fn") {
+            return self
+                .token_at_current_position(TokenType::Declaration(DeclarationToken::Function));
+        } else if word.eq("obj") {
+            return self
+                .token_at_current_position(TokenType::Declaration(DeclarationToken::Object));
+        } else if word.eq("true") {
+            return self.token_at_current_position(TokenType::Literal(LiteralToken::Boolean(true)));
+        } else if word.eq("false") {
+            return self
+                .token_at_current_position(TokenType::Literal(LiteralToken::Boolean(false)));
+        } else if word.eq("null") {
+            return self.token_at_current_position(TokenType::Literal(LiteralToken::Null));
+        } else if word.eq("undefined") {
+            return self.token_at_current_position(TokenType::Literal(LiteralToken::Undefined));
+        } else if word.eq("this") {
+            return self
+                .token_at_current_position(TokenType::ObjectReference(ObjectReferenceToken::This));
+        } else if word.eq("super") {
+            return self.token_at_current_position(TokenType::ObjectReference(
+                ObjectReferenceToken::Super,
+            ));
+        } else if word.eq("new") {
+            return self
+                .token_at_current_position(TokenType::ObjectReference(ObjectReferenceToken::New));
+        } else if word.eq("if") {
+            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::If));
+        } else if word.eq("for") {
+            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::For));
+        } else if word.eq("else") {
+            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::Else));
+        } else if word.eq("in") {
+            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::In));
+        } else if word.eq("has") {
+            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::Has));
+        }
+
         self.token_at_current_position(TokenType::Identifier(IdentifierToken { value: word }))
     }
 
@@ -93,14 +125,44 @@ impl Scanner {
                     '\n' => TokenType::WhiteSpace(WhiteSpaceToken::NewLine),
                     _ => TokenType::Unknown(next_char),
                 };
-                self.token_at_current_position(token_type)
+                let token = self.token_at_current_position(token_type);
+                self.inc();
+                return token;
+            } else if next_char.is_ascii_punctuation() {
+                let token_type = match next_char {
+                    '(' => TokenType::Delimiter(DelimiterToken::OpenParenthesis),
+                    ')' => TokenType::Delimiter(DelimiterToken::CloseParenthesis),
+                    '[' => TokenType::Delimiter(DelimiterToken::OpenBrace),
+                    ']' => TokenType::Delimiter(DelimiterToken::CloseBrace),
+                    '{' => TokenType::Delimiter(DelimiterToken::OpenBracket),
+                    '}' => TokenType::Delimiter(DelimiterToken::CloseBracket),
+                    ',' => TokenType::Punctuation(PunctuatorToken::Comma),
+                    '.' => TokenType::Punctuation(PunctuatorToken::Dot),
+                    ':' => TokenType::Punctuation(PunctuatorToken::Colon),
+                    ';' => TokenType::Punctuation(PunctuatorToken::Semicolon),
+                    '+' => TokenType::Arithmetic(ArithmeticToken::Add),
+                    '-' => TokenType::Arithmetic(ArithmeticToken::Subtract),
+                    '!' => TokenType::Comparison(ComparisonToken::Not),
+                    '=' => TokenType::Assignment(AssignmentToken::Assign),
+                    '/' => TokenType::Arithmetic(ArithmeticToken::Divide),
+                    '&' => TokenType::Arithmetic(ArithmeticToken::And),
+                    '|' => TokenType::Arithmetic(ArithmeticToken::And),
+                    '*' => TokenType::Arithmetic(ArithmeticToken::Multiply),
+                    '>' => TokenType::Comparison(ComparisonToken::GreaterThan),
+                    '<' => TokenType::Comparison(ComparisonToken::LessThan),
+                    _ => TokenType::Unknown(next_char),
+                };
+                self.inc();
+                let token = self.token_at_current_position(token_type);
+                return token;
             } else {
                 // If no other cases match, return an unknown token
-                self.unknown_token()
+                self.inc();
+                let token = self.unknown_token();
+                return token;
             }
         };
         self.start_idx = self.current_idx;
-        self.inc();
         token
     }
 }

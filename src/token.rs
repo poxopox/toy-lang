@@ -1,4 +1,3 @@
-use std::cmp::PartialEq;
 use std::ops::Add;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,7 +34,7 @@ impl Add for NumberToken {
                 // Check for overflow
                 match left.checked_add(right) {
                     Some(result) => Self::SignedInteger(result),
-                    None => Self::Float(left as f64 + right as f64),
+                    _ => Self::Float(left as f64 + right as f64),
                 }
             }
             // If both are unsigned integers, keep as unsigned integer if possible
@@ -43,7 +42,7 @@ impl Add for NumberToken {
                 // Check for overflow
                 match left.checked_add(right) {
                     Some(result) => Self::UnsignedInteger(result),
-                    None => Self::Float(left as f64 + right as f64),
+                    _ => Self::Float(left as f64 + right as f64),
                 }
             }
             // If one is float, result is float
@@ -109,19 +108,21 @@ pub enum DelimiterToken {
 pub enum LiteralToken {
     Number(NumberToken),
     String(String),
+    Boolean(bool),
+    Null,
+    Undefined,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ArithmeticToken {
-    Plus,
-    Minus,
+    Add,
+    Subtract,
     Multiply,
     Divide,
     BitwiseAnd,
     BitwiseOr,
     Or,
     And,
-    Not,
     Modulo,
 }
 
@@ -133,14 +134,13 @@ pub enum ComparisonToken {
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
+    Not,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum LogicalToken {
     And,
     Or,
-    BitwiseOr,
-    BitwiseAnd,
     Not,
     XOr,
     XAnd,
@@ -150,13 +150,12 @@ pub enum LogicalToken {
 pub enum ControlFlowToken {
     If,
     Else,
-    Let,
     For,
     In,
     Has,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AssignmentToken {
     Assign,
     PlusAssign,
@@ -169,7 +168,7 @@ pub enum AssignmentToken {
     AndAssign,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IdentifierToken {
     pub value: String,
 }
@@ -179,25 +178,40 @@ impl IdentifierToken {
         IdentifierToken { value }
     }
 }
+#[derive(Debug, PartialEq, Clone)]
+pub enum DeclarationToken {
+    Let,
+    Function,
+    Object,
+}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
+pub enum ObjectReferenceToken {
+    This,
+    Super,
+    New,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Assignment(AssignmentToken),
     Arithmetic(ArithmeticToken),
     Punctuation(PunctuatorToken),
+    // Used for equality checks
     Comparison(ComparisonToken),
+    // Used for combining expressions
     Logical(LogicalToken),
     Delimiter(DelimiterToken),
     ControlFlow(ControlFlowToken),
     WhiteSpace(WhiteSpaceToken),
     Identifier(IdentifierToken),
     Literal(LiteralToken),
+    Declaration(DeclarationToken),
+    ObjectReference(ObjectReferenceToken),
     Unknown(char),
 }
 
-pub const KEYWORDS: [&str; 5] = ["if", "let", "for", "in", "has"];
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub token_span: TokenSpan,
