@@ -9,9 +9,6 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server);
 
-//logging to debug why static files are not being served
-console.log('Static files directory:', path.join(__dirname, '../public'));
-
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Toy Lang Tokenizer</title>
+    <title>Toy Lang Visualizer</title>
     <style>
       :root {
         --identifier-color: #9cdcfe;
@@ -193,7 +193,7 @@
     </style>
   </head>
   <body>
-    <h1>Toy Lang Tokenizer</h1>
+    <h1>Toy Lang Visualizer</h1>
     <div id="code-editor-container"></div>
     <h2>Tokens:</h2>
     <div id="tokens-output"></div>
@@ -496,14 +496,14 @@
         // Register completions for toy-lang
         monaco.languages.registerCompletionItemProvider('toy-lang', {
           provideCompletionItems: (model, position) => {
-            var word = model.getWordUntilPosition(position);
-            var range = {
+            const word = model.getWordUntilPosition(position);
+            const range = {
               startLineNumber: position.lineNumber,
               endLineNumber: position.lineNumber,
               startColumn: word.startColumn,
               endColumn: word.endColumn,
             };
-            var suggestions = [
+            const suggestions = [
               {
                 label: 'let',
                 kind: monaco.languages.CompletionItemKind.Keyword,

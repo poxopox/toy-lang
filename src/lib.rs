@@ -3,9 +3,9 @@
 mod lexer;
 mod token;
 
-use wasm_bindgen::prelude::*;
 use lexer::Scanner;
 use token::Token;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
@@ -63,10 +63,30 @@ fn token_to_js_value(token: &Token) -> JsValue {
 
     // Set token span properties
     let span = js_sys::Object::new();
-    js_sys::Reflect::set(&span, &"start".into(), &JsValue::from(token.token_span.start as u32)).unwrap();
-    js_sys::Reflect::set(&span, &"end".into(), &JsValue::from(token.token_span.end as u32)).unwrap();
-    js_sys::Reflect::set(&span, &"line".into(), &JsValue::from(token.token_span.line as u32)).unwrap();
-    js_sys::Reflect::set(&span, &"column".into(), &JsValue::from(token.token_span.column as u32)).unwrap();
+    js_sys::Reflect::set(
+        &span,
+        &"start".into(),
+        &JsValue::from(token.token_span.start as u32),
+    )
+    .unwrap();
+    js_sys::Reflect::set(
+        &span,
+        &"end".into(),
+        &JsValue::from(token.token_span.end as u32),
+    )
+    .unwrap();
+    js_sys::Reflect::set(
+        &span,
+        &"line".into(),
+        &JsValue::from(token.token_span.line as u32),
+    )
+    .unwrap();
+    js_sys::Reflect::set(
+        &span,
+        &"column".into(),
+        &JsValue::from(token.token_span.column as u32),
+    )
+    .unwrap();
 
     js_sys::Reflect::set(&obj, &"span".into(), &span).unwrap();
 
@@ -75,7 +95,7 @@ fn token_to_js_value(token: &Token) -> JsValue {
         TokenType::Identifier(id) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"identifier".into()).unwrap();
             js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(&id.value)).unwrap();
-        },
+        }
         TokenType::Literal(lit) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"literal".into()).unwrap();
 
@@ -85,40 +105,46 @@ fn token_to_js_value(token: &Token) -> JsValue {
 
                     match num {
                         token::NumberToken::SignedInteger(n) => {
-                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n)).unwrap();
-                            js_sys::Reflect::set(&obj, &"numberType".into(), &"signed".into()).unwrap();
-                        },
+                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n))
+                                .unwrap();
+                            js_sys::Reflect::set(&obj, &"numberType".into(), &"signed".into())
+                                .unwrap();
+                        }
                         token::NumberToken::UnsignedInteger(n) => {
-                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n as f64)).unwrap();
-                            js_sys::Reflect::set(&obj, &"numberType".into(), &"unsigned".into()).unwrap();
-                        },
+                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n as f64))
+                                .unwrap();
+                            js_sys::Reflect::set(&obj, &"numberType".into(), &"unsigned".into())
+                                .unwrap();
+                        }
                         token::NumberToken::Float(n) => {
-                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n)).unwrap();
-                            js_sys::Reflect::set(&obj, &"numberType".into(), &"float".into()).unwrap();
+                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n))
+                                .unwrap();
+                            js_sys::Reflect::set(&obj, &"numberType".into(), &"float".into())
+                                .unwrap();
                         }
                     }
-                },
+                }
                 token::LiteralToken::String(s) => {
                     js_sys::Reflect::set(&obj, &"literalType".into(), &"string".into()).unwrap();
                     js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(s)).unwrap();
-                },
+                }
                 token::LiteralToken::Boolean(b) => {
                     js_sys::Reflect::set(&obj, &"literalType".into(), &"boolean".into()).unwrap();
                     js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*b)).unwrap();
-                },
+                }
                 token::LiteralToken::Null => {
                     js_sys::Reflect::set(&obj, &"literalType".into(), &"null".into()).unwrap();
                     js_sys::Reflect::set(&obj, &"value".into(), &JsValue::null()).unwrap();
-                },
+                }
                 token::LiteralToken::Undefined => {
                     js_sys::Reflect::set(&obj, &"literalType".into(), &"undefined".into()).unwrap();
                     js_sys::Reflect::set(&obj, &"value".into(), &JsValue::undefined()).unwrap();
                 }
             }
-        },
+        }
         TokenType::WhiteSpace(_) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"whitespace".into()).unwrap();
-        },
+        }
         TokenType::Delimiter(delim) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"delimiter".into()).unwrap();
 
@@ -136,7 +162,7 @@ fn token_to_js_value(token: &Token) -> JsValue {
             };
 
             js_sys::Reflect::set(&obj, &"delimiterType".into(), &JsValue::from(delim_str)).unwrap();
-        },
+        }
         TokenType::Punctuation(punct) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"punctuation".into()).unwrap();
 
@@ -147,8 +173,9 @@ fn token_to_js_value(token: &Token) -> JsValue {
                 token::PunctuatorToken::Colon => "colon",
             };
 
-            js_sys::Reflect::set(&obj, &"punctuationType".into(), &JsValue::from(punct_str)).unwrap();
-        },
+            js_sys::Reflect::set(&obj, &"punctuationType".into(), &JsValue::from(punct_str))
+                .unwrap();
+        }
         TokenType::Arithmetic(arith) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"arithmetic".into()).unwrap();
 
@@ -164,8 +191,9 @@ fn token_to_js_value(token: &Token) -> JsValue {
                 token::ArithmeticToken::Modulo => "modulo",
             };
 
-            js_sys::Reflect::set(&obj, &"arithmeticType".into(), &JsValue::from(arith_str)).unwrap();
-        },
+            js_sys::Reflect::set(&obj, &"arithmeticType".into(), &JsValue::from(arith_str))
+                .unwrap();
+        }
         TokenType::Comparison(comp) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"comparison".into()).unwrap();
 
@@ -180,7 +208,7 @@ fn token_to_js_value(token: &Token) -> JsValue {
             };
 
             js_sys::Reflect::set(&obj, &"comparisonType".into(), &JsValue::from(comp_str)).unwrap();
-        },
+        }
         TokenType::Assignment(assign) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"assignment".into()).unwrap();
 
@@ -196,8 +224,9 @@ fn token_to_js_value(token: &Token) -> JsValue {
                 token::AssignmentToken::AndAssign => "andAssign",
             };
 
-            js_sys::Reflect::set(&obj, &"assignmentType".into(), &JsValue::from(assign_str)).unwrap();
-        },
+            js_sys::Reflect::set(&obj, &"assignmentType".into(), &JsValue::from(assign_str))
+                .unwrap();
+        }
         TokenType::ControlFlow(cf) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"controlFlow".into()).unwrap();
 
@@ -211,7 +240,7 @@ fn token_to_js_value(token: &Token) -> JsValue {
             };
 
             js_sys::Reflect::set(&obj, &"controlFlowType".into(), &JsValue::from(cf_str)).unwrap();
-        },
+        }
         TokenType::Declaration(decl) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"declaration".into()).unwrap();
 
@@ -221,8 +250,9 @@ fn token_to_js_value(token: &Token) -> JsValue {
                 token::DeclarationToken::Object => "object",
             };
 
-            js_sys::Reflect::set(&obj, &"declarationType".into(), &JsValue::from(decl_str)).unwrap();
-        },
+            js_sys::Reflect::set(&obj, &"declarationType".into(), &JsValue::from(decl_str))
+                .unwrap();
+        }
         TokenType::ObjectReference(obj_ref) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"objectReference".into()).unwrap();
 
@@ -232,8 +262,13 @@ fn token_to_js_value(token: &Token) -> JsValue {
                 token::ObjectReferenceToken::New => "new",
             };
 
-            js_sys::Reflect::set(&obj, &"objectReferenceType".into(), &JsValue::from(obj_ref_str)).unwrap();
-        },
+            js_sys::Reflect::set(
+                &obj,
+                &"objectReferenceType".into(),
+                &JsValue::from(obj_ref_str),
+            )
+            .unwrap();
+        }
         TokenType::Logical(logic) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"logical".into()).unwrap();
 
@@ -246,11 +281,11 @@ fn token_to_js_value(token: &Token) -> JsValue {
             };
 
             js_sys::Reflect::set(&obj, &"logicalType".into(), &JsValue::from(logic_str)).unwrap();
-        },
+        }
         TokenType::Unknown(c) => {
             js_sys::Reflect::set(&obj, &"type".into(), &"unknown".into()).unwrap();
             js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(c.to_string())).unwrap();
-        },
+        }
     }
 
     obj.into()

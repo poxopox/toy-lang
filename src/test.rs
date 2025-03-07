@@ -4,8 +4,8 @@ mod tests {
     use crate::token::LogicalToken::Or;
     use crate::token::{
         ArithmeticToken, AssignmentToken, ComparisonToken, ControlFlowToken, DeclarationToken,
-        DelimiterToken, IdentifierToken, LiteralToken, LogicalToken, ObjectReferenceToken,
-        PunctuatorToken, Token, TokenSpan, TokenType,
+        DelimiterToken, IdentifierToken, LiteralToken, LogicalToken, NumberToken,
+        ObjectReferenceToken, PunctuatorToken, Token, TokenSpan, TokenType,
     };
 
     #[test]
@@ -124,7 +124,7 @@ mod tests {
                 TokenType::Literal(LiteralToken::Boolean(false)),
                 TokenSpan {
                     start: 0,
-                    end: 4,
+                    end: 5,
                     line: 0,
                     column: 0,
                 }
@@ -233,7 +233,7 @@ mod tests {
                 TokenType::Delimiter(DelimiterToken::OpenParenthesis),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -251,7 +251,7 @@ mod tests {
                 TokenType::Delimiter(DelimiterToken::CloseParenthesis),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -269,7 +269,7 @@ mod tests {
                 TokenType::Delimiter(DelimiterToken::OpenBracket),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -287,7 +287,7 @@ mod tests {
                 TokenType::Delimiter(DelimiterToken::CloseBracket),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -305,7 +305,7 @@ mod tests {
                 TokenType::Punctuation(PunctuatorToken::Semicolon),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -360,7 +360,7 @@ mod tests {
                 TokenType::Arithmetic(ArithmeticToken::Subtract),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -378,7 +378,7 @@ mod tests {
                 TokenType::Arithmetic(ArithmeticToken::Multiply),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -451,7 +451,7 @@ mod tests {
                 TokenType::Comparison(ComparisonToken::GreaterThan),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -469,7 +469,7 @@ mod tests {
                 TokenType::Comparison(ComparisonToken::LessThan),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -579,7 +579,7 @@ mod tests {
                 TokenType::Comparison(ComparisonToken::Not),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -607,16 +607,48 @@ mod tests {
     }
 
     #[test]
-    fn numbers() {
+    fn unsigned_number() {
         let mut lexer = Scanner::new("100");
         let token = lexer.next().unwrap();
         assert_eq!(
             token,
             Token::new(
-                TokenType::ControlFlow(ControlFlowToken::If),
+                TokenType::Literal(LiteralToken::Number(NumberToken::UnsignedInteger(100))),
                 TokenSpan {
                     start: 0,
-                    end: 2,
+                    end: 3,
+                    line: 0,
+                    column: 0,
+                }
+            )
+        );
+    }
+    fn signed_number() {
+        let mut lexer = Scanner::new("-100");
+        let token = lexer.next().unwrap();
+        assert_eq!(
+            token,
+            Token::new(
+                TokenType::Literal(LiteralToken::Number(NumberToken::SignedInteger(-100))),
+                TokenSpan {
+                    start: 0,
+                    end: 4,
+                    line: 0,
+                    column: 0,
+                }
+            )
+        );
+    }
+    fn float_number() {
+        let mut lexer = Scanner::new("-100");
+        let token = lexer.next().unwrap();
+        assert_eq!(
+            token,
+            Token::new(
+                TokenType::Literal(LiteralToken::Number(NumberToken::Float(20.5))),
+                TokenSpan {
+                    start: 0,
+                    end: 4,
                     line: 0,
                     column: 0,
                 }

@@ -1,5 +1,5 @@
-use crate::token::*;
 use crate::token::TokenType::Literal;
+use crate::token::*;
 
 impl Iterator for Scanner {
     type Item = Token;
@@ -61,8 +61,6 @@ impl Scanner {
     }
     fn word_token(&mut self) -> Token {
         let mut word = String::new();
-        let mut is_number = true;
-        let mut is_float = true;
         while !self.end_of_input() {
             let next_char = self.current_char();
             if next_char.is_alphanumeric() {
@@ -74,13 +72,6 @@ impl Scanner {
                 } else if self.end_of_input() {
                     break;
                 }
-            } else if next_char == '.' {
-                if !is_float {
-                    is_float = true;
-                } else {
-                    is_number = false;
-                }
-            } else {
                 break;
             }
             self.inc();
@@ -112,7 +103,7 @@ impl Scanner {
 
             // Default - Identifier
             _ => {
-                let token =  if let Ok(num) = word.parse::<u64>() {
+                let token = if let Ok(num) = word.parse::<u64>() {
                     Literal(LiteralToken::Number(NumberToken::UnsignedInteger(num)))
                 } else if let Ok(num) = word.parse::<i64>() {
                     Literal(LiteralToken::Number(NumberToken::SignedInteger(num)))
@@ -155,12 +146,12 @@ impl Scanner {
                     ';' => TokenType::Punctuation(PunctuatorToken::Semicolon),
                     '+' => TokenType::Arithmetic(ArithmeticToken::Add),
                     '-' => TokenType::Arithmetic(ArithmeticToken::Subtract),
-                    '!' => TokenType::Comparison(ComparisonToken::Not),
                     '=' => TokenType::Assignment(AssignmentToken::Assign),
                     '/' => TokenType::Arithmetic(ArithmeticToken::Divide),
                     '&' => TokenType::Arithmetic(ArithmeticToken::And),
-                    '|' => TokenType::Arithmetic(ArithmeticToken::And),
+                    '|' => TokenType::Arithmetic(ArithmeticToken::Or),
                     '*' => TokenType::Arithmetic(ArithmeticToken::Multiply),
+                    '!' => TokenType::Comparison(ComparisonToken::Not),
                     '>' => TokenType::Comparison(ComparisonToken::GreaterThan),
                     '<' => TokenType::Comparison(ComparisonToken::LessThan),
                     _ => TokenType::Unknown(next_char),
