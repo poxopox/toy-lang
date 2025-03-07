@@ -18,7 +18,7 @@
     "express": "^4.18.2",
     "monaco-editor": "^0.52.2",
     "socket.io": "^4.7.2",
-    "toy-lang": "file:../toy-lang/pkg/toy-lang-0.1.0.tgz"
+    "toy-lang": "file:../../pkg/toy-lang-0.1.0.tgz"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
