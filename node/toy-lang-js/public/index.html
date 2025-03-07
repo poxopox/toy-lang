@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toy Lang Tokenizer</title>
+    <style>
+      :root {
+        --identifier-color: #9cdcfe;
+        --literal-color: #b5cea8;
+        --whitespace-color: #505050;
+        --delimiter-color: #d4d4d4;
+        --punctuation-color: #d4d4d4;
+        --arithmetic-color: #569cd6;
+        --comparison-color: #d16969;
+        --assignment-color: #ce9178;
+        --controlflow-color: #c586c0;
+        --declaration-color: #569cd6;
+        --objectreference-color: #4ec9b0;
+        --logical-color: #b267e6;
+        --unknown-color: #9e9e9e;
+        --editor-bg-color: #1e1e1e;
+        --editor-text-color: #d4d4d4;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        color: #333;
+      }
+
+      #code-editor-container {
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        height: 150px;
+      }
+
+      #tokens-output {
+        width: 100%;
+        min-height: 50px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 25px;
+      }
+
+      h2 {
+        color: #444;
+        margin-top: 30px;
+        margin-bottom: 15px;
+      }
+
+      .token-symbols {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 10px;
+      }
+
+      .token-symbol {
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .token-info {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+      }
+
+      .token-explanation {
+        margin-bottom: 15px;
+      }
+
+      .token-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .token-item {
+        background-color: white;
+        border-radius: 6px;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        max-width: 180px;
+      }
+
+      .token-item-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .token-item-symbol {
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+
+      .token-item-content {
+        font-size: 14px;
+      }
+
+      .token-item-type {
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+
+      .token-item-value {
+        font-family: 'Courier New', Courier, monospace;
+        background-color: #f9f9f9;
+        padding: 3px 6px;
+        border-radius: 3px;
+        overflow-wrap: break-word;
+      }
+
+      .identifier {
+        background-color: var(--identifier-color);
+      }
+      .literal {
+        background-color: var(--literal-color);
+      }
+      .whitespace {
+        background-color: var(--whitespace-color);
+      }
+      .delimiter {
+        background-color: var(--delimiter-color);
+      }
+      .punctuation {
+        background-color: var(--punctuation-color);
+      }
+      .arithmetic {
+        background-color: var(--arithmetic-color);
+      }
+      .comparison {
+        background-color: var(--comparison-color);
+      }
+      .assignment {
+        background-color: var(--assignment-color);
+      }
+      .controlflow {
+        background-color: var(--controlflow-color);
+      }
+      .declaration {
+        background-color: var(--declaration-color);
+      }
+      .objectreference {
+        background-color: var(--objectreference-color);
+      }
+      .logical {
+        background-color: var(--logical-color);
+      }
+      .unknown {
+        background-color: var(--unknown-color);
+      }
+
+      .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 4px solid #f44336;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Toy Lang Tokenizer</h1>
+    <div id="code-editor-container"></div>
+    <h2>Tokens:</h2>
+    <div id="tokens-output"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.js"></script>
+    <script>
+      const socket = io();
+      const tokensOutput = document.getElementById('tokens-output');
+      let editor; // Reference to the Monaco editor instance
+
+      // Set up Monaco editor
+      require.config({
+        paths: {
+          vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs',
+        },
+      });
+
+      // Get symbol for token types
+      function getTokenSymbol(token) {
+        const type = getTokenTypeName(token).toLowerCase();
+
+        if (type === 'identifier') return 'I';
+        if (type === 'literal') return 'L';
+        if (type === 'whitespace') return 'W';
+        if (type === 'delimiter') return 'D';
+        if (type === 'punctuation') return 'P';
+        if (type === 'arithmetic') return 'A';
+        if (type === 'comparison') return 'C';
+        if (type === 'assignment') return 'AS';
+        if (type === 'controlflow') return 'CF';
+        if (type === 'declaration') return 'DC';
+        if (type === 'objectreference') return 'OR';
+        if (type === 'logical') return 'LG';
+        if (type === 'unknown') return '?';
+
+        return '?';
+      }
+
+      // Get human-readable description for token types
+      function getTokenDescription(type) {
+        type = type.toLowerCase();
+
+        if (type === 'identifier')
+          return 'Name for a variable, function, or class';
+        if (type === 'literal') return 'A fixed value like a number or string';
+        if (type === 'whitespace') return 'Spaces, tabs, or line breaks';
+        if (type === 'delimiter')
+          return 'Marks a boundary between code sections';
+        if (type === 'punctuation') return 'Symbol that structures code';
+        if (type === 'arithmetic') return 'Math operation like +, -, *, /';
+        if (type === 'comparison')
+          return 'Tests equality or inequality (===, <, >, etc)';
+        if (type === 'assignment') return 'Stores a value in a variable (=)';
+        if (type === 'controlflow')
+          return 'Controls code execution flow (if, else, etc)';
+        if (type === 'declaration')
+          return 'Defines a new variable (let, const, var)';
+        if (type === 'objectreference')
+          return 'Accesses properties or methods (.property)';
+        if (type === 'logical')
+          return 'Logic operations like AND (&&) or OR (||)';
+
+        return 'Unknown token type';
+      }
+
+      // Get the token type in a readable format
+      function getTokenTypeName(token) {
+        if (!token || !token.type) return 'unknown';
+
+        // Extract the type from token object
+        let type;
+        if (typeof token.type === 'string') {
+          type = token.type;
+        } else if (token.type.name) {
+          type = token.type.name;
+        } else {
+          type = 'unknown';
+        }
+
+        return type.toLowerCase();
+      }
+
+      // Get CSS class for token types
+      function getTokenClass(token) {
+        const type = getTokenTypeName(token).toLowerCase();
+
+        if (type === 'identifier') return 'identifier';
+        if (type === 'literal') return 'literal';
+        if (type === 'whitespace') return 'whitespace';
+        if (type === 'delimiter') return 'delimiter';
+        if (type === 'punctuation') return 'punctuation';
+        if (type === 'arithmetic') return 'arithmetic';
+        if (type === 'comparison') return 'comparison';
+        if (type === 'assignment') return 'assignment';
+        if (type === 'controlflow') return 'controlflow';
+        if (type === 'declaration') return 'declaration';
+        if (type === 'objectreference') return 'objectreference';
+        if (type === 'logical') return 'logical';
+        if (type === 'unknown') return 'unknown';
+
+        return 'unknown';
+      }
+
+      // Debounce function to avoid too many requests
+      function debounce(func, timeout = 10) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => func.apply(this, args), timeout);
+        };
+      }
+
+      // Initialize Monaco editor
+      require(['vs/editor/editor.main'], function () {
+        // Register the toy-lang language
+        monaco.languages.register({ id: 'toy-lang' });
+
+        // Set the monarch tokens provider for toy-lang
+        monaco.languages.setMonarchTokensProvider('toy-lang', {
+          // Set defaultToken to invalid to see what you do not tokenize yet
+          defaultToken: 'invalid',
+
+          // C# style comments
+          comments: {
+            lineComment: '//',
+            blockComment: ['/*', '*/'],
+          },
+
+          // Regular expressions
+          identifiers: /[a-zA-Z_$][\w$]*/,
+          numbers: /\d+(\.\d+)?/,
+
+          keywords: [
+            // Declarations
+            'let',
+            'fn',
+            'obj',
+
+            // Control Flow
+            'if',
+            'else',
+            'for',
+            'in',
+            'has',
+            'return',
+
+            // Object References
+            'this',
+            'super',
+            'new',
+          ],
+
+          // Literals
+          literals: ['true', 'false', 'null', 'undefined'],
+
+          operators: [
+            '+',
+            '-',
+            '*',
+            '/',
+            '!',
+            '=',
+            '&',
+            '|',
+            '>',
+            '<',
+            '==',
+            '!=',
+            '>=',
+            '<=',
+            '&&',
+            '||',
+            '+=',
+            '-=',
+            '*=',
+            '/=',
+            '&=',
+            '|=',
+          ],
+
+          // we include these common regular expressions
+          symbols: /[=><!~?:&|+\-*\/\^%]+/,
+          escapes:
+            /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+
+          // The main tokenizer for our languages
+          tokenizer: {
+            root: [
+              // Identifiers and keywords
+              [
+                /@identifiers/,
+                {
+                  cases: {
+                    '@keywords': 'keyword',
+                    '@literals': 'constant.language',
+                    '@default': 'identifier',
+                  },
+                },
+              ],
+
+              // Numbers
+              [/@numbers/, 'number'],
+
+              // Whitespace
+              { include: '@whitespace' },
+
+              // Delimiters and operators
+              [/[{}()\[\]]/, '@brackets'],
+              [/[<>](?!@symbols)/, '@brackets'],
+              [
+                /@symbols/,
+                {
+                  cases: {
+                    '@operators': 'operator',
+                    '@default': 'delimiter',
+                  },
+                },
+              ],
+
+              // Punctuation
+              [/[;,.]/, 'delimiter'],
+
+              // Strings
+              [/"([^"\\]|\\.)*$/, 'string.invalid'], // non-terminated string
+              [
+                /"/,
+                { token: 'string.quote', bracket: '@open', next: '@string' },
+              ],
+
+              // Single quote strings
+              [/'([^'\\]|\\.)*$/, 'string.invalid'], // non-terminated string
+              [
+                /'/,
+                {
+                  token: 'string.quote',
+                  bracket: '@open',
+                  next: '@stringSingle',
+                },
+              ],
+            ],
+
+            string: [
+              [/[^\\"]+/, 'string'],
+              [/@escapes/, 'string.escape'],
+              [/\\./, 'string.escape.invalid'],
+              [/"/, { token: 'string.quote', bracket: '@close', next: '@pop' }],
+            ],
+
+            stringSingle: [
+              [/[^\\']+/, 'string'],
+              [/@escapes/, 'string.escape'],
+              [/\\./, 'string.escape.invalid'],
+              [/'/, { token: 'string.quote', bracket: '@close', next: '@pop' }],
+            ],
+
+            whitespace: [
+              [/[ \t\r\n]+/, 'white'],
+              [/\/\*/, 'comment', '@comment'],
+              [/\/\/.*$/, 'comment'],
+            ],
+
+            comment: [
+              [/[^\/*]+/, 'comment'],
+              [/\*\//, 'comment', '@pop'],
+              [/[\/*]/, 'comment'],
+            ],
+          },
+        });
+
+        monaco.languages.setLanguageConfiguration('toy-lang', {
+          autoClosingPairs: [
+            { open: '{', close: '}' },
+            { open: '[', close: ']' },
+            { open: '(', close: ')' },
+            { open: '"', close: '"' },
+          ],
+          indentationRules: {
+            increaseIndentPattern: /^\s*[\w\s]*\s*\{\s*$/,
+            decreaseIndentPattern: /^\s*\}/,
+          },
+        });
+
+        // Define a theme for toy-lang
+        monaco.editor.defineTheme('toyLangTheme', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [
+            { token: 'custom-info', foreground: '808080' },
+            { token: 'custom-error', foreground: 'ff0000', fontStyle: 'bold' },
+            { token: 'custom-notice', foreground: 'FFA500' },
+            { token: 'custom-date', foreground: '008800' },
+          ],
+          colors: {
+            'editor.foreground': '#d4d4d4',
+            'editor.background': '#1e1e1e',
+          },
+        });
+
+        // Register completions for toy-lang
+        monaco.languages.registerCompletionItemProvider('toy-lang', {
+          provideCompletionItems: (model, position) => {
+            var word = model.getWordUntilPosition(position);
+            var range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+            var suggestions = [
+              {
+                label: 'let',
+                kind: monaco.languages.CompletionItemKind.Keyword,
+                insertText: 'let',
+                range: range,
+              },
+              {
+                label: 'if',
+                kind: monaco.languages.CompletionItemKind.Keyword,
+                insertText: 'if (${1:condition}) {\n\t${2}\n}',
+                insertTextRules:
+                  monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                range: range,
+              },
+              {
+                label: 'for',
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText:
+                  'for (${1:init}; ${2:condition}; ${3:increment}) {\n\t${4}\n}',
+                insertTextRules:
+                  monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                range: range,
+              },
+            ];
+            return { suggestions: suggestions };
+          },
+        });
+
+        // Create the editor with toy-lang language
+        editor = monaco.editor.create(
+          document.getElementById('code-editor-container'),
+          {
+            value: 'let x = 100 + 100 === 20;',
+            language: 'toy-lang',
+            theme: 'toyLangTheme',
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+          },
+        );
+
+        // Listen for changes to the editor content
+        editor.onDidChangeModelContent(
+          debounce(() => {
+            const code = editor.getValue();
+            socket.emit('tokenize', code);
+          }, 300),
+        );
+
+        // Initialize with default content
+        socket.emit('tokenize', editor.getValue());
+      });
+
+      // Process tokenization results
+      socket.on('tokens', (tokens) => {
+        tokensOutput.innerHTML = '';
+
+        if (Array.isArray(tokens)) {
+          // Create token symbols container
+          const symbolsContainer = document.createElement('div');
+          symbolsContainer.className = 'token-symbols';
+
+          // Sort tokens by position
+          const sortedTokens = [...tokens].sort((a, b) => {
+            if (a.span && b.span) {
+              return a.span.start - b.span.start;
+            }
+            const posA = a.position || a.pos || (a.span ? a.span.start : 0);
+            const posB = b.position || b.pos || (b.span ? b.span.start : 0);
+            return posA - posB;
+          });
+
+          // Create symbol for each token
+          sortedTokens.forEach((token) => {
+            // Get value based on token type
+            let value = '';
+
+            if (token.value !== undefined) {
+              value = token.value;
+            } else if (token.lexeme !== undefined) {
+              value = token.lexeme;
+            } else if (token.text !== undefined) {
+              value = token.text;
+            }
+
+            // Skip empty or whitespace tokens
+            if (token.type !== 'whitespace' && !/^\s+$/.test(value)) {
+              const symbol = document.createElement('div');
+              symbol.className = `token-symbol ${getTokenClass(token)}`;
+              symbol.textContent = getTokenSymbol(token);
+
+              // Create helpful tooltip showing token details
+              let tooltipContent = `Type: ${getTokenTypeName(token)}`;
+
+              if (token.literalType) {
+                tooltipContent += `\nLiteral Type: ${token.literalType}`;
+              }
+
+              if (token.value !== undefined) {
+                tooltipContent += `\nValue: ${token.value}`;
+              }
+
+              if (token.span) {
+                tooltipContent += `\nPosition: ${token.span.start}-${token.span.end}`;
+              }
+
+              symbol.title = tooltipContent;
+              symbolsContainer.appendChild(symbol);
+            }
+          });
+
+          tokensOutput.appendChild(symbolsContainer);
+
+          // Add detailed token information section
+          const tokenInfo = document.createElement('div');
+          tokenInfo.className = 'token-info';
+
+          // Add explanation
+          const explanation = document.createElement('div');
+          explanation.className = 'token-explanation';
+          explanation.innerHTML =
+            '<p>Tokens are the building blocks of your code. The computer breaks down your code into these small pieces for processing:</p>';
+          tokenInfo.appendChild(explanation);
+
+          // Create detailed token list
+          const tokenList = document.createElement('div');
+          tokenList.className = 'token-list';
+
+          // Add meaningful token items
+          sortedTokens.forEach((token) => {
+            let value = '';
+            if (token.value !== undefined) {
+              value = String(token.value);
+            } else if (token.lexeme !== undefined) {
+              value = String(token.lexeme);
+            } else if (token.text !== undefined) {
+              value = String(token.text);
+            }
+
+            // Skip empty or whitespace tokens
+            if (token.type !== 'whitespace' && !/^\s+$/.test(value)) {
+              const tokenType = getTokenTypeName(token);
+
+              const tokenItem = document.createElement('div');
+              tokenItem.className = 'token-item';
+
+              const tokenHeader = document.createElement('div');
+              tokenHeader.className = 'token-item-header';
+
+              const tokenSymbol = document.createElement('div');
+              tokenSymbol.className = `token-item-symbol ${getTokenClass(token)}`;
+              tokenSymbol.textContent = getTokenSymbol(token);
+              tokenHeader.appendChild(tokenSymbol);
+
+              tokenItem.appendChild(tokenHeader);
+
+              const tokenContent = document.createElement('div');
+              tokenContent.className = 'token-item-content';
+
+              const tokenTypeElem = document.createElement('div');
+              tokenTypeElem.className = 'token-item-type';
+              tokenTypeElem.textContent =
+                tokenType.charAt(0).toUpperCase() + tokenType.slice(1);
+              tokenContent.appendChild(tokenTypeElem);
+
+              const tokenValueElem = document.createElement('div');
+              tokenValueElem.className = 'token-item-value';
+              tokenValueElem.textContent = value;
+              tokenContent.appendChild(tokenValueElem);
+
+              const tokenDescriptionElem = document.createElement('div');
+              tokenDescriptionElem.style.marginTop = '5px';
+              tokenDescriptionElem.style.fontSize = '12px';
+              tokenDescriptionElem.textContent = getTokenDescription(tokenType);
+              tokenContent.appendChild(tokenDescriptionElem);
+
+              if (token.span) {
+                const tokenPositionElem = document.createElement('div');
+                tokenPositionElem.style.marginTop = '5px';
+                tokenPositionElem.style.fontSize = '11px';
+                tokenPositionElem.style.color = '#666';
+                tokenPositionElem.textContent = `Position: ${token.span.start}`;
+                tokenContent.appendChild(tokenPositionElem);
+              }
+
+              tokenItem.appendChild(tokenContent);
+              tokenList.appendChild(tokenItem);
+            }
+          });
+
+          tokenInfo.appendChild(tokenList);
+          tokensOutput.appendChild(tokenInfo);
+        } else {
+          // Simple error message
+          tokensOutput.innerHTML = `
+            <div class="error-message">
+              Error tokenizing code
+            </div>
+          `;
+        }
+      });
+
+      // Handle errors
+      socket.on('error', (error) => {
+        tokensOutput.innerHTML = `
+          <div class="error-message">
+            Error tokenizing code
+          </div>
+        `;
+      });
+    </script>
+  </body>
+</html>

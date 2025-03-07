@@ -1,5 +1,5 @@
-use crate::token::TokenType::Literal;
 use crate::token::*;
+use crate::token::TokenType::Literal;
 
 impl Iterator for Scanner {
     type Item = Token;
@@ -37,8 +37,8 @@ impl Scanner {
     fn current_char(&mut self) -> char {
         self.input.chars().nth(self.current_idx).unwrap()
     }
-    fn peek(&self) -> char {
-        self.input.chars().nth(self.current_idx + 1).unwrap()
+    fn peek(&self) -> Option<char> {
+        self.input.chars().nth(self.current_idx + 1)
     }
 
     fn eof_token(&mut self) -> Token {
@@ -67,7 +67,11 @@ impl Scanner {
             let next_char = self.current_char();
             if next_char.is_alphanumeric() {
                 word.push(next_char);
-                if !self.peek().is_alphanumeric() || self.end_of_input() {
+                if let Some(next_next_char) = self.peek() {
+                    if !next_next_char.is_alphanumeric() {
+                        break;
+                    }
+                } else if self.end_of_input() {
                     break;
                 }
             } else if next_char == '.' {
@@ -108,7 +112,7 @@ impl Scanner {
 
             // Default - Identifier
             _ => {
-                let token = if let Ok(num) = word.parse::<u64>() {
+                let token =  if let Ok(num) = word.parse::<u64>() {
                     Literal(LiteralToken::Number(NumberToken::UnsignedInteger(num)))
                 } else if let Ok(num) = word.parse::<i64>() {
                     Literal(LiteralToken::Number(NumberToken::SignedInteger(num)))
