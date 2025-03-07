@@ -1,3 +1,4 @@
+use crate::token::TokenType::Literal;
 use crate::token::*;
 
 impl Iterator for Scanner {
@@ -30,17 +31,21 @@ impl Scanner {
     fn inc(&mut self) {
         self.current_idx = self.current_idx + 1;
     }
+    fn dec(&mut self) {
+        self.current_idx = self.current_idx - 1;
+    }
+    fn current_char(&mut self) -> char {
+        self.input.chars().nth(self.current_idx).unwrap()
+    }
+    fn peek(&self) -> char {
+        self.input.chars().nth(self.current_idx + 1).unwrap()
+    }
 
     fn eof_token(&mut self) -> Token {
-        self.token_at_current_position(TokenType::Delimiter(DelimiterToken::EOF))
+        self.capture_token(TokenType::Delimiter(DelimiterToken::EOF))
     }
 
-    fn unknown_token(&mut self) -> Token {
-        self.token_at_current_position(TokenType::Unknown(
-            self.input.chars().nth(self.current_idx).unwrap(),
-        ))
-    }
-    fn token_at_current_position(&mut self, token_type: TokenType) -> Token {
+    fn capture_token(&mut self, token_type: TokenType) -> Token {
         Token::new(
             token_type,
             TokenSpan {
@@ -56,80 +61,84 @@ impl Scanner {
     }
     fn word_token(&mut self) -> Token {
         let mut word = String::new();
+        let mut is_number = true;
+        let mut is_float = true;
         while !self.end_of_input() {
-            let next_char = self.input.chars().nth(self.current_idx).unwrap();
+            let next_char = self.current_char();
             if next_char.is_alphanumeric() {
                 word.push(next_char);
-                self.inc();
+                if !self.peek().is_alphanumeric() || self.end_of_input() {
+                    break;
+                }
+            } else if next_char == '.' {
+                if !is_float {
+                    is_float = true;
+                } else {
+                    is_number = false;
+                }
             } else {
                 break;
             }
+            self.inc();
         }
-        if word.eq("let") {
-            return self.token_at_current_position(TokenType::Declaration(DeclarationToken::Let));
-        } else if word.eq("fn") {
-            return self
-                .token_at_current_position(TokenType::Declaration(DeclarationToken::Function));
-        } else if word.eq("obj") {
-            return self
-                .token_at_current_position(TokenType::Declaration(DeclarationToken::Object));
-        } else if word.eq("true") {
-            return self.token_at_current_position(TokenType::Literal(LiteralToken::Boolean(true)));
-        } else if word.eq("false") {
-            return self
-                .token_at_current_position(TokenType::Literal(LiteralToken::Boolean(false)));
-        } else if word.eq("null") {
-            return self.token_at_current_position(TokenType::Literal(LiteralToken::Null));
-        } else if word.eq("undefined") {
-            return self.token_at_current_position(TokenType::Literal(LiteralToken::Undefined));
-        } else if word.eq("this") {
-            return self
-                .token_at_current_position(TokenType::ObjectReference(ObjectReferenceToken::This));
-        } else if word.eq("super") {
-            return self.token_at_current_position(TokenType::ObjectReference(
-                ObjectReferenceToken::Super,
-            ));
-        } else if word.eq("new") {
-            return self
-                .token_at_current_position(TokenType::ObjectReference(ObjectReferenceToken::New));
-        } else if word.eq("if") {
-            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::If));
-        } else if word.eq("for") {
-            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::For));
-        } else if word.eq("else") {
-            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::Else));
-        } else if word.eq("in") {
-            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::In));
-        } else if word.eq("has") {
-            return self.token_at_current_position(TokenType::ControlFlow(ControlFlowToken::Has));
-        }
+        let token_type = match word.as_str() {
+            // Declarations
+            "let" => TokenType::Declaration(DeclarationToken::Let),
+            "fn" => TokenType::Declaration(DeclarationToken::Function),
+            "obj" => TokenType::Declaration(DeclarationToken::Object),
 
-        self.token_at_current_position(TokenType::Identifier(IdentifierToken { value: word }))
+            // Literals
+            "true" => TokenType::Literal(LiteralToken::Boolean(true)),
+            "false" => TokenType::Literal(LiteralToken::Boolean(false)),
+            "null" => TokenType::Literal(LiteralToken::Null),
+            "undefined" => TokenType::Literal(LiteralToken::Undefined),
+
+            // Object References
+            "this" => TokenType::ObjectReference(ObjectReferenceToken::This),
+            "super" => TokenType::ObjectReference(ObjectReferenceToken::Super),
+            "new" => TokenType::ObjectReference(ObjectReferenceToken::New),
+
+            // Control Flow
+            "if" => TokenType::ControlFlow(ControlFlowToken::If),
+            "for" => TokenType::ControlFlow(ControlFlowToken::For),
+            "else" => TokenType::ControlFlow(ControlFlowToken::Else),
+            "in" => TokenType::ControlFlow(ControlFlowToken::In),
+            "has" => TokenType::ControlFlow(ControlFlowToken::Has),
+            "return" => TokenType::ControlFlow(ControlFlowToken::Return),
+
+            // Default - Identifier
+            _ => {
+                let token = if let Ok(num) = word.parse::<u64>() {
+                    Literal(LiteralToken::Number(NumberToken::UnsignedInteger(num)))
+                } else if let Ok(num) = word.parse::<i64>() {
+                    Literal(LiteralToken::Number(NumberToken::SignedInteger(num)))
+                } else if let Ok(num) = word.parse::<f64>() {
+                    Literal(LiteralToken::Number(NumberToken::Float(num)))
+                } else {
+                    TokenType::Identifier(IdentifierToken { value: word })
+                };
+                token
+            }
+        };
+        let token = self.capture_token(token_type);
+        self.inc();
+        token
     }
 
     pub fn next_token(&mut self) -> Token {
         //First, make sure it's not the end of input
-        let token = if self.current_idx >= self.input.len() {
+        let token = if self.end_of_input() {
             self.eof_token()
         } else {
-            let next_char = self.input.chars().nth(self.current_idx).unwrap();
+            let next_char = self.current_char();
             if next_char.is_alphanumeric() {
                 // If the next character is alphanumeric, it's a word token
                 self.word_token()
-            } else if next_char.is_whitespace() {
-                // If the next character is whitespace, capture as whitespace token
-                // first, get the whitespace type
+            } else {
                 let token_type = match next_char {
                     ' ' => TokenType::WhiteSpace(WhiteSpaceToken::Space),
                     '\t' => TokenType::WhiteSpace(WhiteSpaceToken::Tab),
                     '\n' => TokenType::WhiteSpace(WhiteSpaceToken::NewLine),
-                    _ => TokenType::Unknown(next_char),
-                };
-                let token = self.token_at_current_position(token_type);
-                self.inc();
-                return token;
-            } else if next_char.is_ascii_punctuation() {
-                let token_type = match next_char {
                     '(' => TokenType::Delimiter(DelimiterToken::OpenParenthesis),
                     ')' => TokenType::Delimiter(DelimiterToken::CloseParenthesis),
                     '[' => TokenType::Delimiter(DelimiterToken::OpenBrace),
@@ -152,14 +161,9 @@ impl Scanner {
                     '<' => TokenType::Comparison(ComparisonToken::LessThan),
                     _ => TokenType::Unknown(next_char),
                 };
+                let token = self.capture_token(token_type);
                 self.inc();
-                let token = self.token_at_current_position(token_type);
-                return token;
-            } else {
-                // If no other cases match, return an unknown token
-                self.inc();
-                let token = self.unknown_token();
-                return token;
+                token
             }
         };
         self.start_idx = self.current_idx;

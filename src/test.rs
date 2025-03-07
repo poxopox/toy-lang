@@ -124,7 +124,7 @@ mod tests {
                 TokenType::Literal(LiteralToken::Boolean(false)),
                 TokenSpan {
                     start: 0,
-                    end: 5,
+                    end: 4,
                     line: 0,
                     column: 0,
                 }
@@ -323,7 +323,7 @@ mod tests {
                 TokenType::Punctuation(PunctuatorToken::Comma),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -342,7 +342,7 @@ mod tests {
                 TokenType::Arithmetic(ArithmeticToken::Add),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -396,7 +396,7 @@ mod tests {
                 TokenType::Arithmetic(ArithmeticToken::Divide),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -524,7 +524,7 @@ mod tests {
                 TokenType::Assignment(AssignmentToken::Assign),
                 TokenSpan {
                     start: 0,
-                    end: 1,
+                    end: 0,
                     line: 0,
                     column: 0,
                 }
@@ -605,9 +605,9 @@ mod tests {
             )
         );
     }
-    
-    #[test] 
-    fn numbers () {
+
+    #[test]
+    fn numbers() {
         let mut lexer = Scanner::new("100");
         let token = lexer.next().unwrap();
         assert_eq!(
@@ -623,5 +623,4 @@ mod tests {
             )
         );
     }
-    
 }

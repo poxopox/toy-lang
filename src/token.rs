@@ -153,6 +153,7 @@ pub enum ControlFlowToken {
     For,
     In,
     Has,
+    Return,
 }
 
 #[derive(Debug, PartialEq, Clone)]
