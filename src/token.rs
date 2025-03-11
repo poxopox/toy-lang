@@ -4,27 +4,15 @@ use std::ops::Add;
 pub struct TokenSpan {
     pub start: usize,
     pub end: usize,
-    // Not used yet
     pub line: usize,
-    pub column: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NumberToken {
     SignedInteger(i64),
-    UnsignedInteger(u64),
     Float(f64),
 }
 
-impl<'a> From<&'a str> for NumberToken {
-    fn from(value: &'a str) -> Self {
-        let contains_delimiter = value.contains(".") || value.contains(",");
-        if !contains_delimiter {
-            return NumberToken::SignedInteger(value.parse::<i64>().unwrap());
-        }
-        NumberToken::Float(value.parse::<f64>().unwrap())
-    }
-}
 impl Add for NumberToken {
     type Output = NumberToken;
     fn add(self, rhs: Self) -> Self::Output {
@@ -37,41 +25,10 @@ impl Add for NumberToken {
                     _ => Self::Float(left as f64 + right as f64),
                 }
             }
-            // If both are unsigned integers, keep as unsigned integer if possible
-            (Self::UnsignedInteger(left), Self::UnsignedInteger(right)) => {
-                // Check for overflow
-                match left.checked_add(right) {
-                    Some(result) => Self::UnsignedInteger(result),
-                    _ => Self::Float(left as f64 + right as f64),
-                }
-            }
             // If one is float, result is float
             (Self::Float(left), Self::Float(right)) => Self::Float(left + right),
             (Self::Float(left), Self::SignedInteger(right)) => Self::Float(left + right as f64),
-            (Self::Float(left), Self::UnsignedInteger(right)) => Self::Float(left + right as f64),
             (Self::SignedInteger(left), Self::Float(right)) => Self::Float(left as f64 + right),
-            (Self::UnsignedInteger(left), Self::Float(right)) => Self::Float(left as f64 + right),
-            // Mixed integer types - try to use signed if possible, otherwise float
-            (Self::SignedInteger(left), Self::UnsignedInteger(right)) => {
-                if right <= i64::MAX as u64 {
-                    match left.checked_add(right as i64) {
-                        Some(result) => Self::SignedInteger(result),
-                        None => Self::Float(left as f64 + right as f64),
-                    }
-                } else {
-                    Self::Float(left as f64 + right as f64)
-                }
-            }
-            (Self::UnsignedInteger(left), Self::SignedInteger(right)) => {
-                if left <= i64::MAX as u64 {
-                    match (left as i64).checked_add(right) {
-                        Some(result) => Self::SignedInteger(result),
-                        None => Self::Float(left as f64 + right as f64),
-                    }
-                } else {
-                    Self::Float(left as f64 + right as f64)
-                }
-            }
         }
     }
 }

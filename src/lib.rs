@@ -81,12 +81,6 @@ fn token_to_js_value(token: &Token) -> JsValue {
         &JsValue::from(token.token_span.line as u32),
     )
     .unwrap();
-    js_sys::Reflect::set(
-        &span,
-        &"column".into(),
-        &JsValue::from(token.token_span.column as u32),
-    )
-    .unwrap();
 
     js_sys::Reflect::set(&obj, &"span".into(), &span).unwrap();
 
@@ -108,12 +102,6 @@ fn token_to_js_value(token: &Token) -> JsValue {
                             js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n))
                                 .unwrap();
                             js_sys::Reflect::set(&obj, &"numberType".into(), &"signed".into())
-                                .unwrap();
-                        }
-                        token::NumberToken::UnsignedInteger(n) => {
-                            js_sys::Reflect::set(&obj, &"value".into(), &JsValue::from(*n as f64))
-                                .unwrap();
-                            js_sys::Reflect::set(&obj, &"numberType".into(), &"unsigned".into())
                                 .unwrap();
                         }
                         token::NumberToken::Float(n) => {

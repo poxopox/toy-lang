@@ -20,7 +20,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -38,7 +37,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -55,7 +53,6 @@ mod tests {
                     start: 0,
                     end: 3,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -72,7 +69,6 @@ mod tests {
                     start: 0,
                     end: 2,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -89,7 +85,6 @@ mod tests {
                     start: 0,
                     end: 3,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -108,7 +103,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -126,7 +120,6 @@ mod tests {
                     start: 0,
                     end: 5,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -144,7 +137,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -162,7 +154,6 @@ mod tests {
                     start: 0,
                     end: 9,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -180,7 +171,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -198,7 +188,6 @@ mod tests {
                     start: 0,
                     end: 5,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -216,7 +205,6 @@ mod tests {
                     start: 0,
                     end: 3,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -235,7 +223,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -253,7 +240,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -271,7 +257,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -289,7 +274,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -307,7 +291,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -325,7 +308,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -344,7 +326,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -362,7 +343,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -380,7 +360,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -398,7 +377,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -417,7 +395,6 @@ mod tests {
                     start: 0,
                     end: 1,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -435,7 +412,6 @@ mod tests {
                     start: 0,
                     end: 1,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -453,7 +429,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -471,7 +446,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -489,7 +463,6 @@ mod tests {
                     start: 0,
                     end: 2,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -507,7 +480,6 @@ mod tests {
                     start: 0,
                     end: 1,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -526,7 +498,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -545,7 +516,6 @@ mod tests {
                     start: 0,
                     end: 2,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -563,7 +533,6 @@ mod tests {
                     start: 0,
                     end: 2,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -581,7 +550,6 @@ mod tests {
                     start: 0,
                     end: 0,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -600,29 +568,11 @@ mod tests {
                     start: 0,
                     end: 2,
                     line: 0,
-                    column: 0,
                 }
             )
         );
     }
-
     #[test]
-    fn unsigned_number() {
-        let mut lexer = Scanner::new("100");
-        let token = lexer.next().unwrap();
-        assert_eq!(
-            token,
-            Token::new(
-                TokenType::Literal(LiteralToken::Number(NumberToken::UnsignedInteger(100))),
-                TokenSpan {
-                    start: 0,
-                    end: 3,
-                    line: 0,
-                    column: 0,
-                }
-            )
-        );
-    }
     fn signed_number() {
         let mut lexer = Scanner::new("-100");
         let token = lexer.next().unwrap();
@@ -634,7 +584,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
@@ -650,7 +599,6 @@ mod tests {
                     start: 0,
                     end: 4,
                     line: 0,
-                    column: 0,
                 }
             )
         );
